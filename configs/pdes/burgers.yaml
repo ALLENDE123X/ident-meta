@@ -1,0 +1,36 @@
+# Burgers Equation Configuration
+# u_t + u * u_x = nu * u_xx
+
+pde_name: "burgers"
+display_name: "Burgers Equation"
+equation: "u_t = -u * u_x + nu * u_xx"
+
+# Data source
+data_file: "dataset-Python/burgers_viscous.npy"
+data_format: "object_array"  # np.load returns object array
+
+# Grid info (from data inspection)
+grid:
+  nx: 256
+  nt: 814
+  dx: 0.0625  # Approximate, will be computed from domain
+  dt: 0.001   # Approximate
+
+# True coefficients for metric computation
+true_coefficients:
+  "u*u_x": -1.0
+  "u_xx": 0.01  # nu
+
+# Window extraction
+windows:
+  size_x: 64
+  size_t: 100
+  stride_x: 8
+  stride_t: 14
+  target_count: 2500
+
+# IDENT method parameters
+ident_params:
+  max_dx: 4
+  max_poly: 4
+  tau: 0.05

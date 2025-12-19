@@ -1,0 +1,88 @@
+{
+  "total_windows": 5786,
+  "pde_counts": {
+    "kdv": 1734,
+    "heat": 1647,
+    "transport": 1221,
+    "ks": 1184
+  },
+  "best_method_counts": {
+    "LASSO": 3644,
+    "STLSQ": 2136,
+    "WeakIDENT": 4,
+    "RobustIDENT": 2
+  },
+  "train_size": 4628,
+  "test_size": 1158,
+  "test_class_counts": {
+    "LASSO": 729,
+    "STLSQ": 428,
+    "RobustIDENT": 0,
+    "WeakIDENT": 1
+  },
+  "test_accuracy": 97.06,
+  "cv_mean": 87.9,
+  "cv_std": 12.5,
+  "test_zero_regret_count": 1124,
+  "test_zero_regret_pct": 97.06,
+  "test_mean_regret": 0.001,
+  "test_max_regret": 0.4396,
+  "full_zero_regret_count": 5752,
+  "full_zero_regret_pct": 99.41,
+  "full_mean_regret": 0.0002,
+  "feature_importance": [
+    0.1145,
+    0.2322,
+    0.1619,
+    0.0552,
+    0.0686,
+    0.0579,
+    0.0589,
+    0.0246,
+    0.0359,
+    0.0484,
+    0.0936,
+    0.0483
+  ],
+  "stress_test": {
+    "clean": {
+      "LASSO": 56.5,
+      "STLSQ": 43.5,
+      "RobustIDENT": 0.0,
+      "WeakIDENT": 0.0
+    },
+    "noise_2%": {
+      "LASSO": 44.5,
+      "STLSQ": 35.0,
+      "RobustIDENT": 20.5,
+      "WeakIDENT": 0.0
+    },
+    "noise_5%": {
+      "LASSO": 53.0,
+      "STLSQ": 28.0,
+      "RobustIDENT": 19.0,
+      "WeakIDENT": 0.0
+    },
+    "outlier_1%": {
+      "LASSO": 69.0,
+      "STLSQ": 12.0,
+      "RobustIDENT": 19.0,
+      "WeakIDENT": 0.0
+    },
+    "outlier_3%": {
+      "LASSO": 86.5,
+      "STLSQ": 8.5,
+      "RobustIDENT": 5.0,
+      "WeakIDENT": 0.0
+    },
+    "noise_5%_outlier_1%": {
+      "LASSO": 83.0,
+      "STLSQ": 9.0,
+      "RobustIDENT": 8.0,
+      "WeakIDENT": 0.0
+    }
+  },
+  "stress_test_n": 200,
+  "random_state": 42,
+  "cv_note": "cross_val_score(cv=5) uses StratifiedKFold by default for classifiers"
+}

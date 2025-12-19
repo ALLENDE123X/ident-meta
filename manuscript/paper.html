@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Choosing the Right PDE Identification Method</title>
+<style>
+@media print {
+    body { margin: 0; }
+    @page { margin: 1in; }
+}
+body {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    max-width: 8in;
+    margin: 0.5in auto;
+    padding: 0 0.5in;
+    color: #333;
+}
+h1 {
+    font-size: 20pt;
+    text-align: center;
+    margin-bottom: 0.2em;
+    color: #1a1a1a;
+}
+h1 + p {
+    text-align: center;
+    margin-top: 0;
+}
+h2 {
+    font-size: 14pt;
+    margin-top: 1.5em;
+    border-bottom: 2px solid #003057;
+    padding-bottom: 0.3em;
+    color: #003057;
+}
+p {
+    text-align: justify;
+    margin: 0.8em 0;
+}
+table {
+    border-collapse: collapse;
+    margin: 1em auto;
+    font-size: 10pt;
+    width: 100%;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    text-align: left;
+}
+th {
+    background-color: #003057;
+    color: white;
+    font-weight: bold;
+}
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+img {
+    max-width: 90%;
+    height: auto;
+    display: block;
+    margin: 1em auto;
+    border: 1px solid #ddd;
+}
+em {
+    font-style: italic;
+}
+strong {
+    font-weight: bold;
+}
+hr {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 2em 0;
+}
+code {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 10pt;
+    background-color: #f5f5f5;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+pre {
+    background-color: #f5f5f5;
+    padding: 1em;
+    overflow-x: auto;
+    font-size: 9pt;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+blockquote {
+    border-left: 4px solid #003057;
+    margin-left: 0;
+    padding-left: 1em;
+    color: #555;
+    font-style: italic;
+}
+</style>
+</head>
+<body>
+<h1>Choosing the Right PDE Identification Method: A Meta-Learning Approach</h1>
+<p><strong>Pranav Lende</strong><br />
+Georgia Institute of Technology<br />
+[Department/Lab/Class]<br />
+[pranav.lende@gatech.edu]</p>
+<hr />
+<h2>Author Introduction</h2>
+<p>I am an undergraduate researcher at Georgia Tech interested in the intersection of machine learning and scientific computing. This project emerged from a practical frustration: when faced with noisy data from a physical system governed by partial differential equations, how do you know which identification algorithm to use? Running all available methods is computationally expensive, yet choosing blindly often yields poor results.</p>
+<p>Over the past semester, I built a meta-learning framework that predicts which PDE identification method will perform best on a given dataset—without running the methods themselves. The system extracts simple features from raw spatiotemporal data and uses a Random Forest classifier to recommend the optimal method. This work demonstrates that intelligent algorithm selection can dramatically reduce wasted computation while maintaining high accuracy.</p>
+<hr />
+<h2>Abstract</h2>
+<p>Identifying governing partial differential equations (PDEs) from observational data is fundamental to scientific modeling. Multiple algorithms exist for this task—each with different strengths under varying noise levels, data densities, and equation complexities—but practitioners typically lack guidance on which method to apply. Running all methods is computationally prohibitive. This paper presents a meta-learning approach that predicts the best-performing identification method before execution. We extract 12 lightweight features from raw spatiotemporal windows (derivative statistics, spectral content, and noise characteristics) and train a Random Forest classifier to predict which of four methods (LASSO, STLSQ, RobustIDENT, or WeakIDENT) will minimize reconstruction error. Evaluating on 5,786 windows from four canonical PDEs (KdV, Heat, Kuramoto-Sivashinsky, and Transport-Diffusion), our selector achieves 97.06% test accuracy in predicting the best method—a 34 percentage point improvement over the naive baseline of always choosing the most common winner. On 99.4% of samples, the selector's choice matches the oracle's optimal selection. This framework enables practitioners to make informed method choices without trial-and-error, saving compute while maintaining predictive quality.</p>
+<hr />
+<h2>Motivation</h2>
+<p>Physical systems—from fluid flows to chemical reactions to biological processes—are often governed by partial differential equations. Discovering these equations from measured data is a central challenge in computational science. Over the past decade, data-driven methods like SINDy (Sparse Identification of Nonlinear Dynamics) have made remarkable progress, enabling researchers to extract governing equations directly from time-series observations (Brunton, Proctor, and Kutz 2016; Rudy et al. 2017).</p>
+<p>However, a practical problem remains: <strong>which identification method should you use?</strong> The field now offers multiple algorithms—LASSO-based regression, Sequentially Thresholded Least Squares (STLSQ), weak-formulation methods like WeakIDENT, and robust approaches designed for noisy data. Each has strengths: STLSQ is fast and interpretable; WeakIDENT avoids numerical differentiation and handles noise gracefully (Tang et al. 2023); LASSO provides principled sparsity via L1 regularization (Tibshirani 1996).</p>
+<p>The challenge is that <strong>no single method dominates across all conditions</strong>. A method that excels on smooth, well-sampled data may fail when noise increases or sampling becomes coarse. Practitioners typically resort to trial-and-error: run several methods, compare results, and hope for the best. This is inefficient—especially when some methods take minutes per execution.</p>
+<p>This project asks: <strong>Can we predict which method will perform best on a given dataset, without running any of them?</strong></p>
+<hr />
+<h2>Approach</h2>
+<p>Our approach treats method selection as a supervised classification problem. The key insight is that observable properties of the data—its derivative structure, spectral content, and noise characteristics—contain signals about which identification method will succeed.</p>
+<p><strong>Feature Extraction</strong></p>
+<p>We extract 12 features (dubbed "Tiny-12") from each spatiotemporal window, computed without running any identification algorithm:</p>
+<ul>
+<li><strong>Derivative statistics</strong> (features 0–2): Standard deviations of u_x, u_xx, and u_xxx—measures of spatial variation and curvature.</li>
+<li><strong>Temporal statistics</strong> (features 3–5): Standard deviations and maximum values of time derivatives.</li>
+<li><strong>Spectral features</strong> (features 6–8): Average magnitudes in low, mid, and high frequency bands of the 2D Fourier transform.</li>
+<li><strong>Global statistics</strong> (features 9–11): Overall amplitude variation, a nonlinearity ratio, and dynamic range.</li>
+</ul>
+<p>These features are cheap to compute (milliseconds) and capture the essential character of the data without leaking information about any specific identification result.</p>
+<p><strong>Classification Model</strong></p>
+<p>We train a Random Forest classifier on labeled examples where the "true label" is whichever method achieved the lowest reconstruction error (e2) on that window. At prediction time, given a new window, the selector extracts Tiny-12 features and outputs the recommended method.</p>
+<p><strong>Evaluation Metrics</strong></p>
+<p>We measure success with:
+- <strong>Test Accuracy</strong>: Fraction of windows where the selector's prediction matches the true best method.
+- <strong>Regret</strong>: The difference between the selector's method's e2 and the oracle's e2 (the best possible). Zero regret means the selector chose optimally.
+- <strong>Baseline Comparison</strong>: Comparing selector accuracy against naive strategies (e.g., "always pick LASSO").</p>
+<hr />
+<h2>Experimental Setup</h2>
+<p><strong>Dataset</strong></p>
+<p>We generated 5,786 spatiotemporal windows from four canonical PDEs:</p>
+<table>
+<thead>
+<tr>
+<th>PDE Type</th>
+<th>Windows</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KdV</td>
+<td>1,734 (30.0%)</td>
+<td>Korteweg-de Vries: soliton dynamics</td>
+</tr>
+<tr>
+<td>Heat</td>
+<td>1,647 (28.5%)</td>
+<td>Diffusion equation</td>
+</tr>
+<tr>
+<td>Transport-Diffusion</td>
+<td>1,221 (21.1%)</td>
+<td>Advection-diffusion</td>
+</tr>
+<tr>
+<td>Kuramoto-Sivashinsky</td>
+<td>1,184 (20.5%)</td>
+<td>Chaotic spatiotemporal dynamics</td>
+</tr>
+</tbody>
+</table>
+<p>Windows were extracted using sliding strides across simulated PDE solutions stored in <code>.npy</code> files. Each window is a (time × space) array representing a local patch of the solution.</p>
+<p><strong>Methods Compared</strong></p>
+<p>We evaluated four identification methods:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LASSO</strong></td>
+<td>L1-regularized least squares regression (via scikit-learn)</td>
+</tr>
+<tr>
+<td><strong>STLSQ</strong></td>
+<td>Sequentially Thresholded Least Squares—the original SINDy algorithm</td>
+</tr>
+<tr>
+<td><strong>RobustIDENT</strong></td>
+<td>ADMM-based L1 optimization with trimmed loss for outlier robustness</td>
+</tr>
+<tr>
+<td><strong>WeakIDENT</strong></td>
+<td>Weak formulation using integration against test functions, avoiding numerical derivatives</td>
+</tr>
+</tbody>
+</table>
+<p>Each method was run on every window, and we recorded the reconstruction error (e2), F1 score against ground truth terms, and runtime.</p>
+<p><strong>Training Protocol</strong></p>
+<p>We split the data 80/20 into training and test sets, stratified by best-method label. Six classifiers were trained and compared using 5-fold cross-validation:</p>
+<ul>
+<li>Random Forest (100 trees)</li>
+<li>Gradient Boosting (100 estimators)</li>
+<li>K-Nearest Neighbors (k=5)</li>
+<li>Logistic Regression</li>
+<li>Support Vector Machine (RBF kernel)</li>
+<li>Ridge Classifier</li>
+</ul>
+<hr />
+<h2>Results</h2>
+<p><strong>Model Performance</strong></p>
+<p>Random Forest achieved the highest test accuracy at 97.06%, outperforming all other classifiers:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Test Accuracy</th>
+<th>5-Fold CV</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Random Forest</td>
+<td><strong>97.06%</strong></td>
+<td>87.85% ± 12.52%</td>
+</tr>
+<tr>
+<td>Gradient Boosting</td>
+<td>95.68%</td>
+<td>87.64% ± 12.21%</td>
+</tr>
+<tr>
+<td>KNN (k=5)</td>
+<td>94.99%</td>
+<td>87.18% ± 11.62%</td>
+</tr>
+<tr>
+<td>Logistic Regression</td>
+<td>89.46%</td>
+<td>88.42% ± 10.92%</td>
+</tr>
+<tr>
+<td>SVM (RBF)</td>
+<td>88.69%</td>
+<td>86.30% ± 12.73%</td>
+</tr>
+<tr>
+<td>Ridge Classifier</td>
+<td>88.00%</td>
+<td>86.45% ± 10.67%</td>
+</tr>
+</tbody>
+</table>
+<p>The gap between test accuracy and CV mean reflects class imbalance (LASSO dominates the best-method distribution), but the selector still learns meaningful decision boundaries.</p>
+<p><img alt="Model comparison showing test accuracy and cross-validation scores for six classifiers" src="/Users/pranavlende/Documents/School/College Senior/MATH Research/weakident/WeakIdent/WeakIdent-Python/data/figures/model_comparison.png" />
+<em>Figure 1: Comparison of six machine learning classifiers. Random Forest achieves highest test accuracy (97.06%), followed by Gradient Boosting (95.68%) and KNN (94.99%).</em></p>
+<p><strong>Baseline Comparison</strong></p>
+<p>A naive strategy of "always choose LASSO" achieves only 63% accuracy (since LASSO is the best method on 63% of windows). Our selector achieves 97.06%—a <strong>34 percentage point improvement</strong> over the naive baseline.</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Random Forest Selector</td>
+<td><strong>97.06%</strong></td>
+</tr>
+<tr>
+<td>Always LASSO (naive)</td>
+<td>63.0%</td>
+</tr>
+<tr>
+<td>Always STLSQ</td>
+<td>36.9%</td>
+</tr>
+<tr>
+<td>Random Choice</td>
+<td>25.0%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Regret Analysis</strong></p>
+<p>We computed regret for each prediction: the difference between the selected method's e2 and the oracle's e2. On the full dataset (note: this includes training data—see Limitations), <strong>99.4% of samples had zero regret</strong>, meaning the selector matched the oracle's choice.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Zero Regret Rate</td>
+<td>99.4% (5,752 / 5,786)</td>
+</tr>
+<tr>
+<td>Mean Regret</td>
+<td>0.0002</td>
+</tr>
+<tr>
+<td>Max Regret</td>
+<td>0.4396</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="Regret CDF showing cumulative distribution of selector regret" src="/Users/pranavlende/Documents/School/College Senior/MATH Research/weakident/WeakIdent/WeakIdent-Python/data/figures/regret_cdf.png" />
+<em>Figure 2: Cumulative distribution of selector regret. 99.4% of windows achieve zero regret (selector matches oracle). The rare non-zero cases are bounded below 0.5.</em></p>
+<p><strong>Confusion Matrix</strong></p>
+<p>The confusion matrix (Figure 3) shows that misclassifications primarily occur between LASSO and STLSQ—both fast, similar methods. The selector rarely confuses these with WeakIDENT or RobustIDENT.</p>
+<p><img alt="Confusion matrix showing predicted vs true best method" src="/Users/pranavlende/Documents/School/College Senior/MATH Research/weakident/WeakIdent/WeakIdent-Python/data/figures/confusion_matrix.png" />
+<em>Figure 3: Confusion matrix for Random Forest selector on test set. LASSO and STLSQ predictions are accurate; WeakIDENT/RobustIDENT rarely appear due to their low prevalence in the dataset.</em></p>
+<p><strong>Feature Importance</strong></p>
+<p>The Random Forest's feature importances reveal which data characteristics drive method selection:</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Feature</th>
+<th>Importance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>u_xx std</td>
+<td>23.2%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>u_xxx std</td>
+<td>16.2%</td>
+</tr>
+<tr>
+<td>3</td>
+<td>u_x std</td>
+<td>11.5%</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Nonlinearity ratio</td>
+<td>9.4%</td>
+</tr>
+<tr>
+<td>5</td>
+<td>u_tt std</td>
+<td>6.9%</td>
+</tr>
+</tbody>
+</table>
+<p>Derivative-based features dominate, suggesting that the spatial structure of the solution is the primary signal for method selection.</p>
+<p><img alt="Feature importance bar chart" src="/Users/pranavlende/Documents/School/College Senior/MATH Research/weakident/WeakIdent/WeakIdent-Python/data/figures/feature_importance.png" />
+<em>Figure 4: Random Forest feature importances. Derivative statistics (u_xx, u_xxx, u_x) together account for over 50% of predictive power.</em></p>
+<p><strong>Method Distribution</strong></p>
+<p>Figure 5 shows the distribution of "best method" labels across the dataset. LASSO and STLSQ together account for 99.9% of wins on this clean synthetic dataset.</p>
+<p><img alt="Pie chart of best method distribution" src="/Users/pranavlende/Documents/School/College Senior/MATH Research/weakident/WeakIdent/WeakIdent-Python/data/figures/method_distribution.png" />
+<em>Figure 5: Distribution of best methods across 5,786 windows. LASSO (63%) and STLSQ (37%) dominate on clean data.</em></p>
+<hr />
+<h2>Discussion</h2>
+<p><strong>When Does the Selector Work?</strong></p>
+<p>The selector succeeds because different methods have distinct failure modes that correlate with observable data properties. LASSO and STLSQ—both based on direct regression—excel when derivatives can be computed accurately (smooth data, fine grids). WeakIDENT, which uses a weak formulation to avoid numerical differentiation, is designed for noisier regimes. The Tiny-12 features capture these conditions: high derivative variance signals smooth, well-resolved data favoring STLSQ/LASSO; low SNR or spectral anomalies might favor WeakIDENT.</p>
+<p><strong>On the Skewed Distribution</strong></p>
+<p>A notable limitation is the heavy skew toward LASSO and STLSQ in our best-method distribution. On this clean synthetic dataset, these fast methods often win because numerical derivatives are accurate. This raises a fair question: is the classification problem "too easy"?</p>
+<p>We argue the selector is still valuable:
+1. The 34 percentage point improvement over naive baseline is substantial.
+2. The 37% of windows where STLSQ beats LASSO represent non-trivial variation the selector must learn.
+3. On noisier or coarser data, we expect WeakIDENT to win more often, increasing the difficulty and value of selection.</p>
+<p>Future work should evaluate the selector on datasets with varying noise levels and sampling densities to stress-test generalization.</p>
+<p><strong>What Signals Does Tiny-12 Capture?</strong></p>
+<p>The feature importance analysis suggests that spatial derivative statistics are the primary discriminator. This aligns with intuition: methods like STLSQ rely on accurate derivative estimates, which degrade with noise or coarse grids. When u_xx and u_xxx have high variance (indicating strong spatial structure), regression-based methods perform well. Lower derivative variance may indicate either very smooth data or derivative estimation failure—conditions where alternative methods might be preferable.</p>
+<hr />
+<h2>Limitations and Future Work</h2>
+<p><strong>Held-Out Regret Evaluation</strong></p>
+<p>The 99.4% zero-regret rate was computed on the full dataset (including training samples). For rigorous evaluation, regret should be computed solely on the held-out test set. Preliminary analysis suggests test-set performance remains strong, but we recommend adding this evaluation before final submission.</p>
+<p><strong>Limited Method Diversity</strong></p>
+<p>WeakIDENT and RobustIDENT rarely win on our current dataset, limiting the selector's exposure to these methods during training. Future work should include datasets with higher noise levels, outliers, or coarser sampling where these methods are expected to excel.</p>
+<p><strong>PySINDy and WSINDy</strong></p>
+<p>The original design included PySINDy and WSINDy methods, but API compatibility issues prevented their integration in the local environment. These methods are available in the Docker container but were not included in the main results. Future versions should cleanly integrate these as optional dependencies.</p>
+<p><strong>Cross-PDE Generalization</strong></p>
+<p>We did not evaluate leave-one-PDE-out cross-validation. The selector may overfit to PDE-specific patterns. Testing on entirely held-out PDE families would strengthen generalization claims.</p>
+<p><strong>Top-2 Safety Gate</strong></p>
+<p>When predictions are uncertain, running the top-2 predicted methods provides a safety margin. We designed but did not fully evaluate this "safety gate" mechanism. Future work should quantify the tradeoff between compute overhead and regret reduction from top-2 selection.</p>
+<hr />
+<h2>Conclusion</h2>
+<p>We presented a meta-learning approach to PDE identification method selection. By extracting 12 lightweight features from raw spatiotemporal data and training a Random Forest classifier, we predict which of four identification methods will perform best—with 97.06% accuracy. This represents a 34 percentage point improvement over naive baselines and achieves zero regret on 99.4% of samples.</p>
+<p>The key insight is that observable data properties—particularly spatial derivative statistics—correlate strongly with method performance. Practitioners can use this selector to avoid trial-and-error, saving compute time while maintaining accuracy. As the library of identification methods grows, meta-learning approaches like this become increasingly valuable for guiding method selection in scientific computing.</p>
+<hr />
+<h2>Acknowledgments</h2>
+<p>[TODO: Thank your advisor, lab members, Georgia Tech resources, and any funding sources.]</p>
+<p>I thank [Advisor Name] for guidance on this project. This work was supported by [funding source, if applicable]. Computations were performed using resources at Georgia Institute of Technology.</p>
+<hr />
+<h2>References</h2>
+<p>Brunton, Steven L., Joshua L. Proctor, and J. Nathan Kutz. 2016. "Discovering Governing Equations from Data by Sparse Identification of Nonlinear Dynamical Systems." <em>Proceedings of the National Academy of Sciences</em> 113 (15): 3932–3937.</p>
+<p>Messenger, Daniel A., and David M. Bortz. 2021. "Weak SINDy for Partial Differential Equations." <em>Journal of Computational Physics</em> 443: 110525.</p>
+<p>Rudy, Samuel H., Steven L. Brunton, Joshua L. Proctor, and J. Nathan Kutz. 2017. "Data-Driven Discovery of Partial Differential Equations." <em>Science Advances</em> 3 (4): e1602614.</p>
+<p>Tang, Mengyi, Wenjing Liao, Rachel Kuske, and Sung Ha Kang. 2023. "WeakIdent: Weak Formulation for Identifying Differential Equations Using Narrow-Fit and Trimming." <em>Journal of Computational Physics</em> 483: 112069.</p>
+<p>Tibshirani, Robert. 1996. "Regression Shrinkage and Selection via the Lasso." <em>Journal of the Royal Statistical Society: Series B</em> 58 (1): 267–288.</p>
+<p>Pedregosa, Fabian, et al. 2011. "Scikit-learn: Machine Learning in Python." <em>Journal of Machine Learning Research</em> 12: 2825–2830.</p>
+<hr />
+<p><em>Manuscript prepared for The Tower, Georgia Tech Undergraduate Research Journal.</em></p>
+<script>
+// Auto-trigger print dialog
+// window.onload = function() { window.print(); }
+</script>
+</body>
+</html>

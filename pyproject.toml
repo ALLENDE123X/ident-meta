@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "weakident-selector"
+version = "0.1.0"
+description = "PDE-Selector: Meta-learning framework for PDE identification method selection"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "WeakIdent Team"}
+]
+keywords = ["pde", "machine-learning", "meta-learning", "weakident", "algorithm-selection"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+dependencies = [
+    "numpy>=1.22,<2.0",
+    "scipy>=1.9",
+    "pandas>=1.5",
+    "scikit-learn>=1.3",
+    "matplotlib>=3.5",
+    "PyYAML>=6.0",
+    "joblib>=1.3",
+    "tqdm>=4.65",
+    "numpy-indexed>=0.3.7",
+    "tabulate>=0.9",
+]
+
+[project.optional-dependencies]
+catboost = ["catboost>=1.2"]
+pysindy = ["pysindy>=1.7"]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "black>=23.0",
+    "mypy>=1.0",
+]
+all = ["weakident-selector[catboost,pysindy,dev]"]
+
+[project.urls]
+Repository = "https://github.com/sunghakang/WeakIdent"
+
+[project.scripts]
+make-dataset = "scripts.make_dataset:main"
+train-selector = "scripts.train_selector:main"
+evaluate-selector = "scripts.evaluate_selector:main"
+choose-and-run = "scripts.choose_and_run:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "scripts*", "utils*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_ignores = true

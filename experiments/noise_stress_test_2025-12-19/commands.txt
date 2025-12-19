@@ -1,0 +1,1 @@
+python scripts/noise_stress_test.py --n 200 --seed 42

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Meta-Learning Framework for PDE Identification Method Selection"
+authors:
+  - family-names: "Lende"
+    given-names: "Pranav"
+    affiliation: "Georgia Institute of Technology"
+  - family-names: "Kang"
+    given-names: "Sung Ha"
+    affiliation: "Georgia Institute of Technology"
+version: 1.0.0
+date-released: 2025-12-19
+repository-code: "https://github.com/ALLENDE123X/ident-lab"
+license: MIT
+keywords:
+  - PDE identification
+  - meta-learning
+  - algorithm selection
+  - sparse regression
+  - weak-form methods

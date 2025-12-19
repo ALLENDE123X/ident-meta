@@ -1,0 +1,21 @@
+# Commands to reproduce the paper results
+# ========================================
+# Date: 2025-12-18
+# Repository: github.com/ALLENDE123X/ident-lab (WeakIdent-Python folder)
+
+# 1. Setup environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Generate dataset (runs all 4 IDENT methods on PDE windows, ~25 min)
+python scripts/run_all_methods.py
+
+# 3. Train ML models and compare
+python scripts/train_models.py
+
+# 4. Generate figures
+python scripts/generate_figures.py
+
+# Alternative: reproduce using the notebook
+jupyter notebook notebooks/reproduce_paper.ipynb

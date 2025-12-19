@@ -1,0 +1,74 @@
+% Metrics file - Generated from data/results/*.csv
+% Source of truth: manuscript/metrics.json
+
+% Dataset counts
+\newcommand{\TotalWindows}{5,786}
+\newcommand{\TrainSize}{4,628}
+\newcommand{\TestSize}{1,158}
+
+% PDE counts
+\newcommand{\KdVCount}{1,734}
+\newcommand{\HeatCount}{1,647}
+\newcommand{\TransportCount}{1,221}
+\newcommand{\KSCount}{1,184}
+
+% Best method counts (full dataset)
+\newcommand{\LASSOCount}{3,644}
+\newcommand{\LASSOPct}{63.0}
+\newcommand{\STLSQCount}{2,136}
+\newcommand{\STLSQPct}{36.9}
+\newcommand{\WeakIDENTCount}{4}
+\newcommand{\WeakIDENTPct}{0.07}
+\newcommand{\RobustIDENTCount}{2}
+\newcommand{\RobustIDENTPct}{0.03}
+
+% Test set class counts
+\newcommand{\TestLASSO}{729}
+\newcommand{\TestSTLSQ}{428}
+\newcommand{\TestWeakIDENT}{1}
+\newcommand{\TestRobustIDENT}{0}
+
+% Performance metrics
+\newcommand{\TestAccuracy}{97.06}
+\newcommand{\CVMean}{87.9}
+\newcommand{\CVStd}{12.5}
+
+% Regret metrics (test set)
+\newcommand{\TestZeroRegretCount}{1,124}
+\newcommand{\TestZeroRegretPct}{97.06}
+\newcommand{\TestMeanRegret}{0.0010}
+\newcommand{\TestMaxRegret}{0.4396}
+
+% Regret metrics (full dataset, in-sample)
+\newcommand{\FullZeroRegretCount}{5,752}
+\newcommand{\FullZeroRegretPct}{99.41}
+\newcommand{\FullMeanRegret}{0.0002}
+
+% Stress test (N=200)
+\newcommand{\StressTestN}{200}
+% Clean
+\newcommand{\StressCleanLASSO}{56.5}
+\newcommand{\StressCleanSTLSQ}{43.5}
+% Noise 2%
+\newcommand{\StressNoiseTwoLASSO}{44.5}
+\newcommand{\StressNoiseTwoSTLSQ}{35.0}
+\newcommand{\StressNoiseTwoRobust}{20.5}
+% Noise 5%
+\newcommand{\StressNoiseFiveLASSO}{53.0}
+\newcommand{\StressNoiseFiveSTLSQ}{28.0}
+\newcommand{\StressNoiseFiveRobust}{19.0}
+% Outlier 1%
+\newcommand{\StressOutlierOneLASSO}{69.0}
+\newcommand{\StressOutlierOneSTLSQ}{12.0}
+\newcommand{\StressOutlierOneRobust}{19.0}
+% Outlier 3%
+\newcommand{\StressOutlierThreeLASSO}{86.5}
+\newcommand{\StressOutlierThreeSTLSQ}{8.5}
+\newcommand{\StressOutlierThreeRobust}{5.0}
+% Combined
+\newcommand{\StressCombinedLASSO}{83.0}
+\newcommand{\StressCombinedSTLSQ}{9.0}
+\newcommand{\StressCombinedRobust}{8.0}
+
+% Random state
+\newcommand{\RandomState}{42}

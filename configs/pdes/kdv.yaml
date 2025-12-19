@@ -1,0 +1,36 @@
+# Korteweg-de Vries (KdV) Equation Configuration
+# u_t + u * u_x + u_xxx = 0
+
+pde_name: "kdv"
+display_name: "Korteweg-de Vries (KdV) Equation"
+equation: "u_t = -u * u_x - u_xxx"
+
+# Data source
+data_file: "dataset-Python/KdV.npy"
+data_format: "nested_object"  # np.load returns object array with nested array
+
+# Grid info
+grid:
+  nx: 400
+  nt: 601
+  dx: 0.05
+  dt: 0.001
+
+# True coefficients
+true_coefficients:
+  "u*u_x": -1.0
+  "u_xxx": -1.0
+
+# Window extraction
+windows:
+  size_x: 64
+  size_t: 100
+  stride_x: 12
+  stride_t: 20
+  target_count: 2500
+
+# IDENT method parameters
+ident_params:
+  max_dx: 4
+  max_poly: 4
+  tau: 0.05

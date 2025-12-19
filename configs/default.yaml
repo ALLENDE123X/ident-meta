@@ -1,0 +1,128 @@
+# PDE-Selector Configuration
+# Reference: pde-selector-implementation-plan.md §11
+
+# Data generation settings
+data:
+  pdes:
+    - burgers
+    - kdv
+  
+  noise_levels:
+    - 0.0
+    - 0.01
+    - 0.02
+    - 0.05
+  
+  # Grid sizes
+  nx: 256
+  nt: 200
+  dx: 0.00390625  # 1/256
+  dt: 0.005       # 1/200
+  
+  # Windowing parameters
+  window:
+    nx_win: 128
+    nt_win: 64
+    stride_x: 64
+    stride_t: 32
+  
+  # Burgers equation parameters
+  burgers_params:
+    - nu: 0.01
+      ic_type: sine
+      ic_params:
+        amp: 1.0
+        freq: 2.0
+    - nu: 0.005
+      ic_type: gaussian
+      ic_params:
+        amp: 1.0
+        x0: 0.5
+        sigma: 0.1
+    - nu: 0.02
+      ic_type: sine
+      ic_params:
+        amp: 0.8
+        freq: 3.0
+  
+  # KdV equation parameters
+  kdv_params:
+    - alpha: 1.0
+      beta: 0.01
+      ic_type: sech
+      ic_params:
+        amp: 1.0
+        x0: 1.0
+        width: 0.1
+    - alpha: 0.5
+      beta: 0.005
+      ic_type: sine
+      ic_params:
+        amp: 0.5
+        freq: 2.0
+    - alpha: 1.5
+      beta: 0.02
+      ic_type: sech
+      ic_params:
+        amp: 1.5
+        x0: 1.0
+        width: 0.15
+  
+  # IDENT parameters for labeling
+  ident:
+    max_dx: 4
+    max_poly: 4
+    skip_x: 4
+    skip_t: 4
+    tau: 0.05
+
+# Feature extraction settings
+features:
+  smoothing:
+    sg_order: 3
+    win_x: 7
+    win_t: 5
+
+# IDENT methods to train selectors for
+methods:
+  - WeakIDENT
+  # - RobustIDENT  # Uncomment when implemented
+
+# Aggregation settings
+aggregation:
+  weights:
+    - 0.5  # Structure accuracy (F1)
+    - 0.3  # Coefficient error
+    - 0.2  # Residual MSE
+  safety_tau: 0.6  # Threshold for triggering fallback
+
+# Model settings
+model:
+  name: rf_multi  # one of: linear_ols, ridge_multi, regressor_chain_ridge, rf_multi, catboost_multi
+  params:
+    n_estimators: 300
+    max_depth: 8
+  random_state: 0
+  n_jobs: -1  # Use all cores
+
+# Cross-validation settings (optional)
+cv:
+  enabled: true
+  splitter: "kfold"
+  n_splits: 5
+  param_grid:
+    ridge_multi:
+      alpha: [0.1, 1.0, 10.0]
+    rf_multi:
+      max_depth: [6, 8, 10]
+      n_estimators: [200, 300]
+    catboost_multi:
+      depth: [6, 8]
+      learning_rate: [0.03, 0.06]
+      iterations: [400, 800]
+  early_stopping:
+    catboost_multi:
+      use: true
+      eval_fraction: 0.2
+      patience: 50
+

@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Main development/testing environment
+  weakident:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weakident-dev
+    volumes:
+      - .:/app
+      - ./artifacts:/app/artifacts
+      - ./experiments:/app/experiments
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "-c", "from src.ident_methods import METHOD_REGISTRY; print('Registered methods:', METHOD_REGISTRY.list_methods())"]
+
+  # Run all tests
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weakident-test
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["pytest", "tests/", "-v", "--tb=short"]
+
+  # Run PySINDy-specific tests
+  test-pysindy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weakident-test-pysindy
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["pytest", "tests/test_pysindy.py", "-v", "--tb=short"]
+
+  # Run benchmark suite
+  benchmark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weakident-benchmark
+    volumes:
+      - .:/app
+      - ./artifacts:/app/artifacts
+    working_dir: /app
+    command: ["python", "scripts/run_benchmark.py", "--cfg", "config/default.yaml", "--quick", "--parallel", "4"]
+
+  # Generate dataset
+  make-dataset:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weakident-dataset
+    volumes:
+      - .:/app
+      - ./artifacts:/app/artifacts
+    working_dir: /app
+    command: ["python", "scripts/make_dataset.py", "--cfg", "config/default.yaml", "--parallel", "4", "--verbose"]
+
+  # Interactive shell
+  shell:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weakident-shell
+    volumes:
+      - .:/app
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    command: ["/bin/bash"]
