@@ -36,6 +36,9 @@ wheels/
 # Jupyter
 .ipynb_checkpoints/
 
+# Pytest
+.pytest_cache/
+
 # Data/outputs (kept in data/ folder which IS tracked)
 *.log
 logs/
