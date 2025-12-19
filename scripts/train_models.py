@@ -36,7 +36,7 @@ def load_dataset(path: str = "data/results/full_dataset_4methods.csv") -> pd.Dat
 
 
 def prepare_data(df: pd.DataFrame):
-    """Prepare features and labels."""
+    """Prepare features and labels (no scaling here - done after split)."""
     X = df[FEATURE_COLS].values
     y = df[TARGET_COL].values
     
@@ -47,18 +47,20 @@ def prepare_data(df: pd.DataFrame):
     le = LabelEncoder()
     y_encoded = le.fit_transform(y)
     
-    # Scale features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    
-    return X_scaled, y_encoded, le, scaler
+    return X, y_encoded, le
 
 
 def train_and_compare(X, y, le):
     """Train multiple models and compare."""
+    # Split FIRST, then scale (no leakage)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
+    
+    # Scale AFTER split (fit on train only)
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
     
     models = {
         "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
@@ -170,22 +172,19 @@ def main():
     # Load data
     df = load_dataset()
     
-    # Prepare
-    X, y, le, scaler = prepare_data(df)
+    # Prepare (no scaling here - done in train_and_compare)
+    X, y, le = prepare_data(df)
     print(f"\nFeatures: {X.shape[1]}")
     print(f"Classes: {len(le.classes_)} - {le.classes_}")
     
-    # Train and compare
+    # Train and compare (scaling happens inside, after split)
     results, best_model, le = train_and_compare(X, y, le)
     
-    # Compute regret on test set
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
-    df_test = df.iloc[y_test]
-    
-    # For full dataset regret
-    predictions = best_model.predict(X)
+    # For full dataset regret analysis, scale full X using a fresh scaler
+    # (This is in-sample, so scaling on full is acceptable for regret reporting)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    predictions = best_model.predict(X_scaled)
     regret = compute_regret(df, predictions, le)
     
     # Save results
